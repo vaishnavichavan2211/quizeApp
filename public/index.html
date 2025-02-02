@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Quiz</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .quiz-container {
+      background-color: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .question-number {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .question {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 25px;
+      line-height: 1.5;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .option {
+      padding: 15px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background-color: #fff;
+      color: #333;
+      font-size: 1rem;
+    }
+
+    .option:hover:not(.selected) {
+      background-color: #f8f9fa;
+      border-color: #007bff;
+      transform: translateY(-2px);
+    }
+
+    .option.selected {
+      background-color: #007bff;
+      border-color: #007bff;
+      color: white;
+    }
+
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    button {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .previous-btn {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .next-btn {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .submit-btn {
+      background-color: #28a745;
+      color: white;
+    }
+
+    button:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .result-container {
+      text-align: center;
+      padding: 30px;
+    }
+
+    .score {
+      font-size: 1.5rem;
+      color: #28a745;
+      margin: 20px 0;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background-color: #e0e0e0;
+      margin-bottom: 20px;
+      border-radius: 2px;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: #007bff;
+      transition: width 0.3s ease;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="quiz-container">
+  <div class="progress-bar">
+    <div class="progress" style="width: 0%"></div>
+  </div>
+  <div class="question-number">Question <span id="current-question">1</span> of <span id="total-questions">5</span></div>
+  <div class="question" id="question"></div>
+  <div class="options" id="options"></div>
+  <div class="navigation">
+    <button class="previous-btn" id="previous-btn" disabled>Previous</button>
+    <button class="next-btn" id="next-btn">Next</button>
+  </div>
+</div>
+
+<div class="quiz-container result-container" id="result-container" style="display: none;">
+  <h2>Quiz Complete!</h2>
+  <div class="score">Your Score: <span id="final-score">0</span>/<span id="total-score">5</span></div>
+  <button onclick="location.reload()">Try Again</button>
+</div>
+
+<script>
+  fetch('quiz').then(response => response.json()).then(quizData => {
+    let currentQuestion = 0;
+    let userAnswers = [];
+    const quizContainer = document.querySelector('.quiz-container');
+    const resultContainer = document.getElementById('result-container');
+    const progressBar = document.querySelector('.progress');
+
+    function showQuestion() {
+      const questionData = quizData[currentQuestion];
+      document.getElementById('question').textContent = questionData.question;
+      const optionsContainer = document.getElementById('options');
+      optionsContainer.innerHTML = '';
+
+      questionData.options.forEach((option, index) => {
+        const optionElement = document.createElement('div');
+        optionElement.className = `option${userAnswers[currentQuestion] === index ? ' selected' : ''}`;
+        optionElement.textContent = option;
+        optionElement.addEventListener('click', () => selectAnswer(index));
+        optionsContainer.appendChild(optionElement);
+      });
+
+      document.getElementById('current-question').textContent = currentQuestion + 1;
+      document.getElementById('total-questions').textContent = quizData.length;
+      document.getElementById('previous-btn').disabled = currentQuestion === 0;
+      document.getElementById('next-btn').textContent = currentQuestion === quizData.length - 1 ? 'Submit' : 'Next';
+
+      const progress = ((currentQuestion + 1) / quizData.length) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
+
+    function selectAnswer(index) {
+      userAnswers[currentQuestion] = index;
+      const options = document.querySelectorAll('.option');
+      options.forEach((option, i) => {
+        option.classList.toggle('selected', i === index);
+      });
+    }
+
+    function showResults() {
+      quizContainer.style.display = 'none';
+      resultContainer.style.display = 'block';
+      const score = userAnswers.reduce((acc, answer, index) =>
+              acc + (answer === quizData[index].correct ? 1 : 0), 0);
+      document.getElementById('final-score').textContent = score;
+      document.getElementById('total-score').textContent = quizData.length;
+    }
+
+    document.getElementById('previous-btn').addEventListener('click', () => {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        showQuestion();
+      }
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        showQuestion();
+      } else {
+        showResults();
+      }
+    });
+
+    showQuestion();
+  });
+</script>
+</body>
+</html>
