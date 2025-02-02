@@ -4,7 +4,7 @@ A simple web-based quiz app using Express.js. Fetches questions from an external
 
 ## Setup
 1. Clone the repo:  
-   git clone [https://github.com/vaishnavichavan2211/quizeApp]
+   git clone https://github.com/vaishnavichavan2211/quizeApp
 2. Install dependencies:  
    npm install
 3. Start the server:  
